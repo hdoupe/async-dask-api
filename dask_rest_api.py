@@ -68,7 +68,7 @@ def calc_callback(future):
     print('got aggr_d', aggr_d)
     print('posting result...')
     # posts result to falcon app in mock_pb.py
-    response = requests.post('http://localhost:8000/result', json=json.dumps({'aggr_d': aggr_d}))
+    response = requests.post('http://mock:8000/result', json=json.dumps({'aggr_d': aggr_d}))
     print('local response', response, response.text)
 
 class MainHandler(tornado.web.RequestHandler):
@@ -115,11 +115,13 @@ class MainHandler(tornado.web.RequestHandler):
 def make_app():
     return tornado.web.Application(
         [(r'/taxcalc', MainHandler), ],
+        default_host='0.0.0.0',
         debug=True,
         autoreload=True
     )
 
 if __name__ == "__main__":
+    print('starting up app...')
     app = make_app()
     app.listen(8888)
     tornado.ioloop.IOLoop.current().start()
