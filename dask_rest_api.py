@@ -1,7 +1,7 @@
 import json
 import asyncio
 
-import requests
+import aiohttp
 
 import tornado.ioloop
 import tornado.web
@@ -38,7 +38,7 @@ async def calc(future, policy_dict):
     print('submit kw...', json.dumps(kw, indent=3))
     # returns a new future for the dask job
     dask_futures = []
-    for i in range(0, 3):
+    for i in range(0, 2):
         kw['year_n'] = i
         dask_futures.append(
             client.submit(taxcalc.tbi.run_nth_year_tax_calc_model, **kw)
@@ -47,29 +47,25 @@ async def calc(future, policy_dict):
     # 1. control is passed back to the event main loop
     # 2. dask is pushing this job onto the compute cluster
     print('await on result...')
-    result = await client.gather(dask_futures)
-    print('finished. setting result...')
-    # set result on future created in `post` to be retrieved in the later
-    future.set_result(result)
-
-def calc_callback(future):
-    """
-    Call back function for `calc`
-    Called once `calc` returns
-
-    Gets result from future object and posts to mock PolicyBrain results view
-    """
-    print('result done...')
-    # grab the result and only hold onto the aggr_d result
-    results = future.result()
+    results = await client.gather(dask_futures)
     aggr_d = {}
     for result in results:
         aggr_d.update(result['aggr_d'])
     print('got aggr_d', aggr_d)
     print('posting result...')
     # posts result to falcon app in mock_pb.py
-    response = requests.post('http://mock:8000/result', json=json.dumps({'aggr_d': aggr_d}))
-    print('local response', response, response.text)
+    async with aiohttp.ClientSession() as session:
+        async with session.post('http://mock:8000/result', json=json.dumps({'aggr_d': aggr_d})) as resp:
+            status = resp.status
+            text = resp.text()
+    print('local response:')
+    print('\tstatus:', status)
+    text_done = await text
+    print('\tbody:', text_done)
+    print('finished. setting result...')
+    # set result on future created in `post` to be retrieved in the later
+    future.set_result('DONE')
+
 
 class MainHandler(tornado.web.RequestHandler):
 
@@ -104,7 +100,6 @@ class MainHandler(tornado.web.RequestHandler):
         # `calc` is done
         future = asyncio.Future()
         asyncio.ensure_future(calc(future, policy_dict))
-        future.add_done_callback(calc_callback)
         body = (
             'a future has been scheduled, the model is running, a result \n'
             'will be returned soon'
