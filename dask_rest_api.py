@@ -107,9 +107,29 @@ class MainHandler(tornado.web.RequestHandler):
         self.write(body)
 
 
+class Ready(tornado.web.RequestHandler):
+
+    async def get(self):
+        print('GET-READY')
+        client = await Client(asynchronous=True)
+        print('client', client)
+        print('sched info', client._scheduler_identity)
+
+        self.write('feeling ready...')
+
+class Healthy(tornado.web.RequestHandler):
+
+    async def get(self):
+        print('GET-HEALTH')
+
+        self.write('feeling healthy...')
+
+
 def make_app():
     return tornado.web.Application(
-        [(r'/taxcalc', MainHandler), ],
+        [(r'/taxcalc', MainHandler),
+         (r'/ready', Ready),
+         (r'/healthy', Healthy)],
         default_host='0.0.0.0',
         debug=True,
         autoreload=True
