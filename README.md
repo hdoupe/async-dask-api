@@ -13,3 +13,11 @@ In window 2, run
 
 In window3, test with:
 `source activate tc-dask-demo && http -f POST http://localhost:8888/taxcalc policy='{"2018": {"_II_em": [8000]}}'`
+
+
+OR run with docker:
+
+
+```
+docker-compose up
+```
