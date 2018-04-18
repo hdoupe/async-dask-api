@@ -1,14 +1,16 @@
 import json
 import asyncio
+import os
 
 import aiohttp
 
 import tornado.ioloop
 import tornado.web
-from dask.distributed import Client
+from distributed import Client
 
 import taxcalc
 
+PBRAIN_SCHEDULER_ADDRESS = os.environ.get('PBRAIN_SCHEDULER_ADDRESS', 'DNE')
 
 async def calc(future, policy_dict):
     """
@@ -34,7 +36,10 @@ async def calc(future, policy_dict):
     # also maybe AioClient should be used instead of regular client
     # depends on which event loop is being used: asyncio loop or tornado loop
     # http://distributed.readthedocs.io/en/latest/asynchronous.html#asyncio
-    client = await Client(asynchronous=True)
+    print('getting client at address', PBRAIN_SCHEDULER_ADDRESS)
+    client = await Client(PBRAIN_SCHEDULER_ADDRESS, asynchronous=True)
+    print('calc client', client)
+    print('calc sched info', client._scheduler_identity)
     print('submit kw...', json.dumps(kw, indent=3))
     # returns a new future for the dask job
     dask_futures = []
@@ -111,9 +116,12 @@ class Ready(tornado.web.RequestHandler):
 
     async def get(self):
         print('GET-READY')
-        client = await Client(asynchronous=True)
+        client = await Client(PBRAIN_SCHEDULER_ADDRESS, asynchronous=True)
         print('client', client)
         print('sched info', client._scheduler_identity)
+        print('closing client')
+        await client.close()
+        print('closed client', client)
 
         self.write('feeling ready...')
 
