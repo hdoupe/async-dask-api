@@ -1,0 +1,6 @@
+worker:
+  env:
+  - name: EXTRA_CONDA_PACKAGES
+    value: taxcalc -c ospc
+  - name: EXTRA_PIP_PACKAGES
+    value: s3fs dask-ml --upgrade

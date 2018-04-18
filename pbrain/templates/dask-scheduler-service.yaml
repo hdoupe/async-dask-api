@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "pbrain.fullname" . }}-scheduler
+  labels:
+    app: {{ template "pbrain.name" . }}
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "pbrain.chart" . }}
+    component: scheduler
+spec:
+  ports:
+    - name: {{ template "pbrain.fullname" . }}-scheduler
+      port: {{ .Values.scheduler.servicePort }}
+      targetPort: 8786
+    - name: {{ template "pbrain.fullname" . }}-webui
+      port: {{ .Values.webUI.servicePort }}
+      targetPort: 8787
+  selector:
+    app: {{ template "pbrain.name" . }}
+    release: {{ .Release.Name | quote }}
+    component: scheduler
+  type: {{ .Values.scheduler.serviceType }}

@@ -1,0 +1,11 @@
+name: pbrain
+apiVersion: v1
+version: 0.1.0
+appVersion: 1.5.0
+description: Distributed computation in Python with task scheduling
+home: https://github.com/hdoupe/helm-chart
+sources:
+- https://github.com/hdoupe/helm-chart
+maintainers:
+- name: hdoupe
+  email: henry.doupe@aei.org

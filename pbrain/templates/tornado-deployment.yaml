@@ -1,0 +1,54 @@
+{{ if .Values.tornado.enabled -}}
+
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ template "pbrain.fullname" . }}-tornado
+  labels:
+    app: {{ template "pbrain.name" . }}
+    chart: {{ template "pbrain.chart" . }}
+    release: {{ .Release.Name | quote}}
+    heritage: {{ .Release.Service | quote }}
+    component: tornado
+spec:
+  replicas: {{ .Values.tornado.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "pbrain.name" . }}
+      release: {{ .Release.Name }}
+      component: tornado
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ template "pbrain.name" . }}
+        release: {{ .Release.Name | quote}}
+        component: tornado
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.tornado.image.repository }}:{{ .Values.tornado.image.tag }}"
+          imagePullPolicy: {{ .Values.tornado.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8888
+              protocol: TCP
+          resources:
+{{ toYaml .Values.tornado.resources | indent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+          env:
+              - name: PBRAIN_SCHEDULER_ADDRESS
+                value: {{ template "pbrain.fullname" . }}-scheduler:{{ .Values.scheduler.servicePort }}
+{{- if .Values.tornado.env }}
+{{ toYaml .Values.tornado.env | indent 12 }}
+{{- end }}
+
+{{ end }}

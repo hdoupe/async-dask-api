@@ -1,0 +1,25 @@
+{{ if .Values.tornado.enabled -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "pbrain.fullname" . }}-tornado
+  labels:
+    app: {{ template "pbrain.name" . }}
+    chart: {{ template "pbrain.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    component: tornado
+spec:
+  type: {{ .Values.tornado.serviceType }}
+  ports:
+    - port: {{ .Values.tornado.servicePort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ template "pbrain.name" . }}
+    release: {{ .Release.Name }}
+    component: tornado
+
+{{ end }}
