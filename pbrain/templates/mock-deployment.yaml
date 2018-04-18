@@ -1,22 +1,22 @@
-{{ if .Values.tornado.enabled -}}
+{{ if .Values.mock.enabled -}}
 
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: {{ template "pbrain.fullname" . }}-tornado
+  name: {{ template "pbrain.fullname" . }}-mock
   labels:
     app: {{ template "pbrain.name" . }}
     chart: {{ template "pbrain.chart" . }}
     release: {{ .Release.Name | quote}}
     heritage: {{ .Release.Service | quote }}
-    component: tornado
+    component: mock
 spec:
-  replicas: {{ .Values.tornado.replicas }}
+  replicas: {{ .Values.mock.replicas }}
   selector:
     matchLabels:
       app: {{ template "pbrain.name" . }}
       release: {{ .Release.Name }}
-      component: tornado
+      component: mock
   strategy:
     type: RollingUpdate
   template:
@@ -24,33 +24,26 @@ spec:
       labels:
         app: {{ template "pbrain.name" . }}
         release: {{ .Release.Name | quote}}
-        component: tornado
+        component: mock
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.tornado.image.repository }}:{{ .Values.tornado.image.tag }}"
-          imagePullPolicy: {{ .Values.tornado.image.pullPolicy }}
+          image: "{{ .Values.mock.image.repository }}:{{ .Values.mock.image.tag }}"
+          imagePullPolicy: {{ .Values.mock.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: 8888
+              containerPort: 8000
               protocol: TCP
           resources:
-{{ toYaml .Values.tornado.resources | indent 12 }}
+{{ toYaml .Values.mock.resources | indent 12 }}
           livenessProbe:
             httpGet:
               path: /healthy
               port: http
           readinessProbe:
             httpGet:
-              path: /ready
+              path: /healthy
               port: http
           env:
-              - name: PBRAIN_SCHEDULER_ADDRESS
-                value: {{ template "pbrain.fullname" . }}-scheduler:{{ .Values.scheduler.servicePort }}
-              - name: MOCK_ADDRESS
-                value: {{ template "pbrain.fullname" .}}-mock:{{ .Values.mock.servicePort }}
-{{- if .Values.tornado.env }}
-{{ toYaml .Values.tornado.env | indent 12 }}
-{{- end }}
 
 {{ end }}

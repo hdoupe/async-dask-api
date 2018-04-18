@@ -11,6 +11,7 @@ from distributed import Client
 import taxcalc
 
 PBRAIN_SCHEDULER_ADDRESS = os.environ.get('PBRAIN_SCHEDULER_ADDRESS', 'DNE')
+MOCK_ADDRESS = os.environ.get('MOCK_ADDRESS', 'DNE')
 
 async def calc(future, policy_dict):
     """
@@ -59,14 +60,14 @@ async def calc(future, policy_dict):
     print('got aggr_d', aggr_d)
     print('posting result...')
     # posts result to falcon app in mock_pb.py
-    # async with aiohttp.ClientSession() as session:
-    #     async with session.post('http://mock:8000/result', json=json.dumps({'aggr_d': aggr_d})) as resp:
-    #         status = resp.status
-    #         text = resp.text()
-    # print('local response:')
-    # print('\tstatus:', status)
-    # text_done = await text
-    # print('\tbody:', text_done)
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f'http://{MOCK_ADDRESS}/result', json=json.dumps({'aggr_d': aggr_d})) as resp:
+            status = resp.status
+            text = resp.text()
+    print('local response:')
+    print('\tstatus:', status)
+    text_done = await text
+    print('\tbody:', text_done)
     print('finished. setting result...')
     # set result on future created in `post` to be retrieved in the later
     future.set_result('DONE')
@@ -122,6 +123,16 @@ class Ready(tornado.web.RequestHandler):
         print('closing client')
         await client.close()
         print('closed client', client)
+
+        # make sure mock app is reachable
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f'http://{MOCK_ADDRESS}/healthy') as resp:
+                status = resp.status
+                text = resp.text()
+        print('local response:')
+        print('\tstatus:', status)
+        text_done = await text
+        print('\tbody:', text_done)
 
         self.write('feeling ready...')
 

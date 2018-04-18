@@ -1,0 +1,25 @@
+{{ if .Values.mock.enabled -}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "pbrain.fullname" . }}-mock
+  labels:
+    app: {{ template "pbrain.name" . }}
+    chart: {{ template "pbrain.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    component: mock
+spec:
+  type: {{ .Values.mock.serviceType }}
+  ports:
+    - port: {{ .Values.mock.servicePort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ template "pbrain.name" . }}
+    release: {{ .Release.Name }}
+    component: mock
+
+{{ end }}

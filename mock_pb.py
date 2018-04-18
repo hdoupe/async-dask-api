@@ -16,6 +16,14 @@ class Result(object):
         resp.body = result
         resp.status = falcon.HTTP_OK
 
+
+class Healthy(object):
+    def on_get(self, req, resp):
+        print('GET-HEALTHY-READY')
+        resp.body = 'feeling healthy...'
+
 api = application = falcon.API()
 result = Result()
+healthy = Healthy()
 api.add_route('/result', result)
+api.add_route('/healthy', healthy)
