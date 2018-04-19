@@ -21,3 +21,14 @@ OR run with docker:
 ```
 docker-compose up
 ```
+
+
+OR run with kubernetes:
+
+1. Follow [Dask's Kubernetes and Helm guide](http://dask.pydata.org/en/latest/setup/kubernetes-helm.html) to get
+kubernetes running on a cloud provider of your choice. This project is developed
+with Google cloud in mind.
+2. Set up a google cloud cluster and run:
+```
+helm install pbrain-charts/pbrain -f pbrain/values.yaml
+```
