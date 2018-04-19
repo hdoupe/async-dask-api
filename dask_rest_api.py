@@ -34,9 +34,6 @@ async def calc(future, policy_dict):
         'return_dict': True
     }
     # this will have to be initialized elsewhere but works for demo purposes
-    # also maybe AioClient should be used instead of regular client
-    # depends on which event loop is being used: asyncio loop or tornado loop
-    # http://distributed.readthedocs.io/en/latest/asynchronous.html#asyncio
     print('getting client at address', PBRAIN_SCHEDULER_ADDRESS)
     client = await Client(PBRAIN_SCHEDULER_ADDRESS, asynchronous=True)
     print('calc client', client)
@@ -69,7 +66,7 @@ async def calc(future, policy_dict):
     text_done = await text
     print('\tbody:', text_done)
     print('finished. setting result...')
-    # set result on future created in `post` to be retrieved in the later
+    # set result on future
     future.set_result('DONE')
 
 
@@ -102,8 +99,6 @@ class MainHandler(tornado.web.RequestHandler):
             policy_dict[int(k)] = policy_dict.pop(k)
         print('got policy_dict', policy_dict)
         # create future, schedule the execution of coroutine `calc`
-        # `calc_callback` is the callback funcion i.e. the function called once
-        # `calc` is done
         future = asyncio.Future()
         asyncio.ensure_future(calc(future, policy_dict))
         body = (
