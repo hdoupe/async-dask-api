@@ -28,7 +28,7 @@ worker:
     repository: "daskdev/dask"
     tag: "latest"
     pullPolicy: IfNotPresent
-  replicas: 1
+  replicas: 5
   aptPackages: >-
   env:
     - name: EXTRA_CONDA_PACKAGES
@@ -37,8 +37,8 @@ worker:
     #   value: s3fs dask-ml --upgrade
   resources:
     limits:
-      cpu: 1
-      memory: 9G
+      cpu: 2
+      memory: 20G
 
 
 tornado:
@@ -46,7 +46,7 @@ tornado:
   enabled: true
   image:
     repository: "opensourcepolicycenter/tornado"
-    tag: "0.1.10"
+    tag: "0.1.14"
     pullPolicy: IfNotPresent
   replicas: 1
   serviceType: "LoadBalancer"
@@ -70,7 +70,7 @@ mock:
   enabled: true
   image:
     repository: "opensourcepolicycenter/mock"
-    tag: "0.1.10"
+    tag: "0.1.14"
     pullPolicy: IfNotPresent
   replicas: 1
   serviceType: "LoadBalancer"

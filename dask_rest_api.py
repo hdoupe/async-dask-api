@@ -21,7 +21,7 @@ async def calc(future, policy_dict):
 
     kw = {
         'start_year': 2018,
-        'use_full_sample': False,
+        'use_full_sample': True,
         'user_mods': {
             u'policy': policy_dict,
             u'growdiff_response': {},
@@ -44,7 +44,7 @@ async def calc(future, policy_dict):
     print('submit kw...', json.dumps(kw, indent=3))
     # returns a new future for the dask job
     dask_futures = []
-    for i in range(0, 2):
+    for i in range(0, 10):
         kw['year_n'] = i
         dask_futures.append(
             client.submit(taxcalc.tbi.run_nth_year_tax_calc_model, **kw)
@@ -58,7 +58,7 @@ async def calc(future, policy_dict):
     for result in results:
         aggr_d.update(result['aggr_d'])
     print('got aggr_d', aggr_d)
-    print('posting result...')
+    print('posting result to', f'http://{MOCK_ADDRESS}/result')
     # posts result to falcon app in mock_pb.py
     async with aiohttp.ClientSession() as session:
         async with session.post(f'http://{MOCK_ADDRESS}/result', json=json.dumps({'aggr_d': aggr_d})) as resp:
