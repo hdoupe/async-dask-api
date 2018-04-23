@@ -1,17 +1,23 @@
 import json
 import asyncio
-import os
-
 import aiohttp
 
-import tornado.ioloop
-import tornado.web
 from distributed import Client
-
 import taxcalc
+from tornado.web import RequestHandler
 
-PBRAIN_SCHEDULER_ADDRESS = os.environ.get('PBRAIN_SCHEDULER_ADDRESS', 'DNE')
-MOCK_ADDRESS = os.environ.get('MOCK_ADDRESS', 'DNE')
+from api.utils import PBRAIN_SCHEDULER_ADDRESS, APP_ADDRESS
+
+
+def from_json(keywords):
+    keywords = json.loads(keywords)
+    keys = keywords.keys()
+    for k in keys:
+        keywords[int(k)] = keywords.pop(k)
+    return keywords
+
+taxcalc.tbi.from_json = from_json
+
 
 async def calc(future, policy_dict):
     """
@@ -55,22 +61,18 @@ async def calc(future, policy_dict):
     for result in results:
         aggr_d.update(result['aggr_d'])
     print('got aggr_d', aggr_d)
-    print('posting result to', f'http://{MOCK_ADDRESS}/result')
+    print('posting result to', f'http://{APP_ADDRESS}/result')
     # posts result to falcon app in mock_pb.py
-    async with aiohttp.ClientSession() as session:
-        async with session.post(f'http://{MOCK_ADDRESS}/result', json=json.dumps({'aggr_d': aggr_d})) as resp:
-            status = resp.status
-            text = resp.text()
-    print('local response:')
-    print('\tstatus:', status)
-    text_done = await text
-    print('\tbody:', text_done)
+    await async_post(
+        f'http://{MOCK_ADDRESS}/result',
+        json=json.dumps({'aggr_d': aggr_d})
+    )
     print('finished. setting result...')
     # set result on future
     future.set_result('DONE')
 
 
-class MainHandler(tornado.web.RequestHandler):
+class TaxBrainHandler(RequestHandler):
 
     def get(self):
         print('GET')
@@ -91,66 +93,16 @@ class MainHandler(tornado.web.RequestHandler):
         """
         print('POST')
         # get the POST data and do some parsing
-        policy = self.get_body_argument('policy')
-        print('raw policy data', policy)
-        policy_dict = json.loads(policy)
-        keys = policy_dict.keys()
-        for k in keys:
-            policy_dict[int(k)] = policy_dict.pop(k)
-        print('got policy_dict', policy_dict)
+        print('body', self.request.body)
+        keywords = json.loads(self.request.body.decode('utf-8'))
+        print('raw policy data', keywords)
+        function_args = taxcalc.tbi.from_json(keywords['keywords'])
+        print('got function_args', function_args)
         # create future, schedule the execution of coroutine `calc`
         future = asyncio.Future()
-        asyncio.ensure_future(calc(future, policy_dict))
+        asyncio.ensure_future(calc(future, function_args))
         body = (
             'a future has been scheduled, the model is running, a result \n'
             'will be returned soon'
         )
         self.write(body)
-
-
-class Ready(tornado.web.RequestHandler):
-
-    async def get(self):
-        print('GET-READY')
-        client = await Client(PBRAIN_SCHEDULER_ADDRESS, asynchronous=True)
-        print('client', client)
-        print('sched info', client._scheduler_identity)
-        print('closing client')
-        await client.close()
-        print('closed client', client)
-
-        # make sure mock app is reachable
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f'http://{MOCK_ADDRESS}/healthy') as resp:
-                status = resp.status
-                text = resp.text()
-        print('local response:')
-        print('\tstatus:', status)
-        text_done = await text
-        print('\tbody:', text_done)
-
-        self.write('feeling ready...')
-
-class Healthy(tornado.web.RequestHandler):
-
-    async def get(self):
-        print('GET-HEALTH')
-
-        self.write('feeling healthy...')
-
-
-def make_app():
-    return tornado.web.Application(
-        [(r'/taxcalc', MainHandler),
-         (r'/ready', Ready),
-         (r'/healthy', Healthy)],
-        default_host='0.0.0.0',
-        debug=True,
-        autoreload=True
-    )
-
-if __name__ == "__main__":
-    print('starting up app...')
-    app = make_app()
-    app.listen(8888)
-    tornado.ioloop.IOLoop.current().start()

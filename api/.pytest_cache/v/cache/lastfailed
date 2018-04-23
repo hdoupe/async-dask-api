@@ -1,0 +1,4 @@
+{
+  "tests/test.py": true,
+  "tests/test.py::test_health": true
+}
