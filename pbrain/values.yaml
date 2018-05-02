@@ -46,7 +46,7 @@ tornado:
   enabled: true
   image:
     repository: "opensourcepolicycenter/tornado"
-    tag: "0.1.14"
+    tag: "dist-processing-bug"
     pullPolicy: IfNotPresent
   replicas: 1
   serviceType: "LoadBalancer"
@@ -70,7 +70,7 @@ mock:
   enabled: true
   image:
     repository: "opensourcepolicycenter/mock"
-    tag: "0.1.14"
+    tag: "dist-processing-bug"
     pullPolicy: IfNotPresent
   replicas: 1
   serviceType: "LoadBalancer"
