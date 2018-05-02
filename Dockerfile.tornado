@@ -2,9 +2,9 @@ FROM opensourcepolicycenter/tornado-base:latest
 
 USER root
 
-RUN mkdir /home/tornado-app
-COPY dask_rest_api.py /home/tornado-app/
-WORKDIR /home/tornado-app
+RUN mkdir /home/api
+COPY ./api /home/api/
+WORKDIR /home/api
 
 ENV HOST 0.0.0.0
 ENV PORT 8888
@@ -14,4 +14,4 @@ EXPOSE 80
 EXPOSE 8888
 
 # run the app server
-CMD ["python", "-u", "dask_rest_api.py"]
+CMD ["python", "-u", "api.py"]
