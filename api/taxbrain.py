@@ -6,11 +6,10 @@ from distributed import Client
 import taxcalc
 from tornado.web import RequestHandler
 
-from api.utils import PBRAIN_SCHEDULER_ADDRESS, APP_ADDRESS
+from utils import PBRAIN_SCHEDULER_ADDRESS, APP_ADDRESS, async_post, async_get
 
 
 def from_json(keywords):
-    keywords = json.loads(keywords)
     keys = keywords.keys()
     for k in keys:
         keywords[int(k)] = keywords.pop(k)
@@ -47,7 +46,7 @@ async def calc(future, policy_dict):
     print('submit kw...', json.dumps(kw, indent=3))
     # returns a new future for the dask job
     dask_futures = []
-    for i in range(0, 10):
+    for i in range(0, 6):
         kw['year_n'] = i
         dask_futures.append(
             client.submit(taxcalc.tbi.run_nth_year_tax_calc_model, **kw)
@@ -62,9 +61,10 @@ async def calc(future, policy_dict):
         aggr_d.update(result['aggr_d'])
     print('got aggr_d', aggr_d)
     print('posting result to', f'http://{APP_ADDRESS}/result')
+
     # posts result to falcon app in mock_pb.py
     await async_post(
-        f'http://{MOCK_ADDRESS}/result',
+        f'http://{APP_ADDRESS}/result',
         json=json.dumps({'aggr_d': aggr_d})
     )
     print('finished. setting result...')
@@ -74,9 +74,17 @@ async def calc(future, policy_dict):
 
 class TaxBrainHandler(RequestHandler):
 
-    def get(self):
+    async def get(self):
         print('GET')
-        self.write('get does not do anything')
+        client = await Client(PBRAIN_SCHEDULER_ADDRESS, asynchronous=True)
+        result = await client.processing()
+        print(result)
+        for address in result:
+            print('checking jobs at address:', address)
+            for job in result[address]:
+                print('\t', job)
+
+        self.write(json.dumps(result))
 
     def post(self):
         """
