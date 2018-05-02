@@ -2,12 +2,12 @@ import os
 import aiohttp
 
 PBRAIN_SCHEDULER_ADDRESS = os.environ.get('PBRAIN_SCHEDULER_ADDRESS', None)
-APP_ADDRESS = os.environ.get('MOCK_ADDRESS', '127.0.0.1:8000')
+APP_ADDRESS = os.environ.get('MOCK_ADDRESS', 'mock:8000')
 
 
-async def async_post(url, data=None, json_data=None):
+async def async_post(url, data=None, json=None):
     async with aiohttp.ClientSession() as session:
-        async with session.post(url, data=data, json=json_data) as resp:
+        async with session.post(url, data=data, json=json) as resp:
             status = resp.status
             text = resp.text()
     text_done = await text
