@@ -1,4 +1,9 @@
 {
   "tests/test.py": true,
+  "tests/test.py::APITestCase": true,
+  "tests/test.py::APITestCase::test_ready": true,
+  "tests/test.py::AsyncHTTPTestCase": true,
+  "tests/test.py::AsyncTestCase": true,
+  "tests/test.py::TaxBrainTestCase::test_post": true,
   "tests/test.py::test_health": true
 }

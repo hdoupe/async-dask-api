@@ -13,5 +13,7 @@ ENV PORT 8888
 EXPOSE 80
 EXPOSE 8888
 
+ENV REDIS_ADDRESS redis://redis:6379/0
+
 # run the app server
 CMD ["python", "-u", "api.py"]

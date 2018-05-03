@@ -3,7 +3,7 @@ from tornado.ioloop import IOLoop
 from distributed import Client
 
 from taxbrain import TaxBrainHandler
-from utils import APP_ADDRESS, PBRAIN_SCHEDULER_ADDRESS, async_get
+from utils import APP_ADDRESS, PBRAIN_SCHEDULER_ADDRESS
 
 class Ready(RequestHandler):
 
@@ -14,10 +14,6 @@ class Ready(RequestHandler):
         print('sched info', client._scheduler_identity)
         print('closing client')
         await client.close()
-        print('closed client', client)
-        print('here, ', APP_ADDRESS)
-        # make sure mock app is reachable
-        await async_get(f'http://{APP_ADDRESS}/healthy')
         self.write('feeling ready...')
 
 
@@ -31,7 +27,7 @@ class Healthy(RequestHandler):
 
 def make_app():
     return Application(
-        [(r'/taxbrain', TaxBrainHandler),
+        [(r'/taxbrain/', TaxBrainHandler),
          (r'/ready', Ready),
          (r'/healthy', Healthy)],
         default_host='0.0.0.0',

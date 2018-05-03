@@ -1,12 +1,12 @@
 version: '3'
 services:
   tornado:
-    image: opensourcepolicycenter/tornado:dist-processing-bug
+    image: opensourcepolicycenter/tornado:redis-0
     ports:
       - 8888:8888
     environment:
       - APP_ADDRESS=mock:8000
-  mock:
-    image: opensourcepolicycenter/mock:dist-processing-bug
-    ports:
-      - 8000:8000
+    depends_on:
+      - redis
+  redis:
+      image: redis

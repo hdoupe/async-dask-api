@@ -1,6 +1,7 @@
 import asyncio
 import random
 import json
+import time
 
 from tornado.testing import AsyncHTTPTestCase, AsyncTestCase
 from distributed import Client
@@ -8,6 +9,7 @@ from distributed import Client
 import taxcalc
 
 from api.api import make_app
+from api.utils import PBRAIN_SCHEDULER_ADDRESS
 
 
 async def mock_aiohttp(url, data=None, json=None):
@@ -45,7 +47,7 @@ class TaxBrainTestCase(AsyncHTTPTestCase):
         from taxcalc import tbi
         def f(**kwargs):
             print(kwargs)
-            time.sleep(int(random.random() * 10))
+            time.sleep(2)
             return {'aggr_d': {'result': kwargs['year_n']}}
         real_run = tbi.run_nth_year_tax_calc_model
         tbi.run_nth_year_tax_calc_model = f
@@ -63,8 +65,12 @@ class TaxBrainTestCase(AsyncHTTPTestCase):
             pending = asyncio.Task.all_tasks()
             print('pending', pending)
             # yield from asyncio.gather(*pending)
-            client = Client()
-            print('client', client.has_what())
+            client = Client(asynchronous=True)
+            for j in range(0, 10):
+                print('client', client.has_what())
+                pending = asyncio.Task.all_tasks()
+                print('pending', pending)
+                time.sleep(1)
             # assert response.body == b'feeling healthy...'
         finally:
             tbi.run_nth_year_tax_calc_model = real_run
