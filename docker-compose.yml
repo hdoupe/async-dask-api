@@ -17,6 +17,8 @@ services:
       - "8786:8786"
       - "8787:8787"
     command: ["dask-scheduler"]
+    depends_on:
+      - worker
   worker:
     image: opensourcepolicycenter/dask
     hostname: dask-worker
