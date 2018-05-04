@@ -9,7 +9,7 @@ from distributed import Client
 import taxcalc
 
 from api.api import make_app
-from api.utils import PBRAIN_SCHEDULER_ADDRESS
+from api.utils import SUCCESS, FAIL
 
 
 async def mock_aiohttp(url, data=None, json=None):
@@ -27,15 +27,9 @@ class APITestCase(AsyncHTTPTestCase):
         assert response.body == b'feeling healthy...'
 
     def test_ready(self):
-        from api import utils
-        real_get = utils.async_get
-        utils.async_get = mock_aiohttp
-        try:
-            response = self.fetch('/ready')
-            assert response.code == 200
-            assert response.body == b'feeling ready...'
-        finally:
-            utils.async_get = real_get
+        response = self.fetch('/ready')
+        assert response.code == 200
+        assert response.body == b'feeling ready...'
 
 
 class TaxBrainTestCase(AsyncHTTPTestCase):
@@ -44,33 +38,35 @@ class TaxBrainTestCase(AsyncHTTPTestCase):
         return make_app()
 
     def test_post(self):
-        from taxcalc import tbi
+        from api.taxbrain import taxcalc
         def f(**kwargs):
             print(kwargs)
             time.sleep(2)
             return {'aggr_d': {'result': kwargs['year_n']}}
-        real_run = tbi.run_nth_year_tax_calc_model
-        tbi.run_nth_year_tax_calc_model = f
+        real_run = taxcalc.tbi.run_nth_year_tax_calc_model
+        taxcalc.tbi.run_nth_year_tax_calc_model = f
         try:
             headers = {'Content-Type': 'application/json'}
-            body = {'keywords': '{"2018": {"_II_em": [8000]}}'}
+            body = {"keywords": {"2018": {"_II_em": [8000]}}}
             response = self.fetch(
-                '/taxbrain',
+                '/taxbrain/',
                 method='POST',
                 headers=headers,
                 body=json.dumps(body).encode('utf-8'),
             )
             print(response.error)
             assert response.code == 200
-            pending = asyncio.Task.all_tasks()
-            print('pending', pending)
-            # yield from asyncio.gather(*pending)
-            client = Client(asynchronous=True)
-            for j in range(0, 10):
-                print('client', client.has_what())
-                pending = asyncio.Task.all_tasks()
-                print('pending', pending)
-                time.sleep(1)
-            # assert response.body == b'feeling healthy...'
+            status = json.loads(response.body.decode('utf-8'))
+            job_id = status['job_id']
+            print('init status', status)
+            while status['status'] not in (SUCCESS, FAIL):
+                response = self.fetch(f'/taxbrain/?job_id={job_id}')
+                status = json.loads(response.body.decode('utf-8'))
+                print('status', status)
+                time.sleep(2)
+
+            assert status['status'] == SUCCESS
+            assert status['result'] != False
+
         finally:
-            tbi.run_nth_year_tax_calc_model = real_run
+            taxcalc.tbi.run_nth_year_tax_calc_model = real_run
