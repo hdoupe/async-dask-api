@@ -37,7 +37,7 @@ class TaxBrainTestCase(AsyncHTTPTestCase):
     def get_app(self):
         return make_app()
 
-    def test_post(self):
+    def test_post_job_and_polling(self):
         from api.taxbrain import taxcalc
         def f(**kwargs):
             print(kwargs)
