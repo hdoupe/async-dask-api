@@ -5,8 +5,19 @@ services:
     ports:
       - 8888:8888
     environment:
-      - APP_ADDRESS=mock:8000
+      - PBRAIN_SCHEDULER_ADDRESS=scheduler:8786
     depends_on:
       - redis
+      - scheduler
   redis:
-      image: redis
+    image: redis
+  scheduler:
+    image: opensourcepolicycenter/dask
+    ports:
+      - "8786:8786"
+      - "8787:8787"
+    command: ["dask-scheduler"]
+  worker:
+    image: opensourcepolicycenter/dask
+    hostname: dask-worker
+    command: ["dask-worker scheduler:8786"]
