@@ -9,7 +9,7 @@ import taxcalc
 from tornado.web import RequestHandler
 from tornado.ioloop import IOLoop
 
-from utils import (PBRAIN_SCHEDULER_ADDRESS, APP_ADDRESS, REDIS_ADDRESS,
+from api.utils import (PBRAIN_SCHEDULER_ADDRESS, APP_ADDRESS, REDIS_ADDRESS,
                    QUEUING, PENDING, SUCCESS, FAIL)
 
 
@@ -67,6 +67,7 @@ async def calc(future, policy_dict, job_id):
     # 2. dask is pushing this job onto the compute cluster
     print('await on result...')
     results = await client.gather(dask_futures)
+    await client.close()
     aggr_d = {}
     for result in results:
         aggr_d.update(result['aggr_d'])
@@ -75,6 +76,8 @@ async def calc(future, policy_dict, job_id):
     print('setting result at redis server')
     job_status = {'status': SUCCESS, 'result': aggr_d}
     ok = await conn.execute('set', job_id, json.dumps(job_status))
+    conn.close()
+    await conn.wait_closed()
     assert ok == 'OK', ok
     print('done with job', job_id)
     # set result on future
@@ -106,6 +109,8 @@ class TaxBrainHandler(RequestHandler):
 
         print('got job_id', job_id)
         _result = await conn.execute('get', job_id)
+        conn.close()
+        await conn.wait_closed()
         # result = json.loads(_result)
         print('result', _result)
         if _result is None:
@@ -149,6 +154,8 @@ class TaxBrainHandler(RequestHandler):
         asyncio.ensure_future(calc(future, function_args, job_id))
 
         _status_dict = await conn.execute('get', job_id)
+        conn.close()
+        await conn.wait_closed()
         status_dict = json.loads(_status_dict)
         status_dict['job_id'] = job_id
         self.write(status_dict)
