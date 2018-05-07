@@ -2,8 +2,8 @@ from tornado.web import Application, RequestHandler
 from tornado.ioloop import IOLoop
 from distributed import Client
 
-from api.taxbrain import TaxBrainHandler
-from api.utils import APP_ADDRESS, PBRAIN_SCHEDULER_ADDRESS
+from taxbrain import TaxBrainHandler
+from utils import APP_ADDRESS, PBRAIN_SCHEDULER_ADDRESS
 
 class Ready(RequestHandler):
 

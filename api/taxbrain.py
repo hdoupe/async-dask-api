@@ -9,8 +9,8 @@ import taxcalc
 from tornado.web import RequestHandler
 from tornado.ioloop import IOLoop
 
-from api.utils import (PBRAIN_SCHEDULER_ADDRESS, APP_ADDRESS, REDIS_ADDRESS,
-                   QUEUING, PENDING, SUCCESS, FAIL)
+from utils import (PBRAIN_SCHEDULER_ADDRESS, APP_ADDRESS, REDIS_ADDRESS,
+                   QUEUING, PENDING, SUCCESS, FAIL, RedisConnection)
 
 
 def from_json(keywords):
@@ -48,36 +48,38 @@ async def calc(future, policy_dict, job_id):
     print('calc client', client)
     print('calc sched info', client._scheduler_identity)
     print('submit kw...', json.dumps(kw, indent=3))
-    conn = await aioredis.create_connection(REDIS_ADDRESS,
-                                            loop=IOLoop.current().asyncio_loop,
-                                            encoding='utf-8')
-    job_status = {'status': PENDING, 'result': False}
-    ok = await conn.execute('set', job_id, json.dumps(job_status))
-    assert ok == 'OK', ok
 
-    # returns a new future for the dask job
-    dask_futures = []
-    for i in range(0, 2):
-        kw['year_n'] = i
-        dask_futures.append(
-            client.submit(taxcalc.tbi.run_nth_year_tax_calc_model, **kw)
-        )
-    # use await here -->
-    # 1. control is passed back to the event main loop
-    # 2. dask is pushing this job onto the compute cluster
-    print('await on result...')
-    results = await client.gather(dask_futures)
-    await client.close()
-    aggr_d = {}
-    for result in results:
-        aggr_d.update(result['aggr_d'])
+    async with RedisConnection(REDIS_ADDRESS,
+                               loop=IOLoop.current().asyncio_loop,
+                               encoding='utf-8') as conn:
+        job_status = {'status': PENDING, 'result': False}
+        ok = await conn.execute('set', job_id, json.dumps(job_status))
+        assert ok == 'OK', ok
+
+        # returns a new future for the dask job
+        dask_futures = []
+        for i in range(0, 2):
+            kw['year_n'] = i
+            dask_futures.append(
+                client.submit(taxcalc.tbi.run_nth_year_tax_calc_model, **kw)
+            )
+        # use await here -->
+        # 1. control is passed back to the event main loop
+        # 2. dask is pushing this job onto the compute cluster
+        print('await on result...')
+        results = await client.gather(dask_futures)
+        await client.close()
+        aggr_d = {}
+        for result in results:
+            aggr_d.update(result['aggr_d'])
     print('got aggr_d', aggr_d)
     # store results in redis server
-    print('setting result at redis server')
-    job_status = {'status': SUCCESS, 'result': aggr_d}
-    ok = await conn.execute('set', job_id, json.dumps(job_status))
-    conn.close()
-    await conn.wait_closed()
+    async with RedisConnection(REDIS_ADDRESS,
+                               loop=IOLoop.current().asyncio_loop,
+                               encoding='utf-8') as conn:
+        print('setting result at redis server')
+        job_status = {'status': SUCCESS, 'result': aggr_d}
+        ok = await conn.execute('set', job_id, json.dumps(job_status))
     assert ok == 'OK', ok
     print('done with job', job_id)
     # set result on future
@@ -103,14 +105,12 @@ class TaxBrainHandler(RequestHandler):
         job_id = self.get_query_argument('job_id', False)
         if not job_id:
             self.write('you must send a job_id for look-up')
-        conn = await aioredis.create_connection(REDIS_ADDRESS,
-                                                loop=IOLoop.current().asyncio_loop,
-                                                encoding='utf-8')
+        async with RedisConnection(REDIS_ADDRESS,
+                                   loop=IOLoop.current().asyncio_loop,
+                                   encoding='utf-8') as conn:
 
-        print('got job_id', job_id)
-        _result = await conn.execute('get', job_id)
-        conn.close()
-        await conn.wait_closed()
+            print('got job_id', job_id)
+            _result = await conn.execute('get', job_id)
         # result = json.loads(_result)
         print('result', _result)
         if _result is None:
@@ -143,19 +143,15 @@ class TaxBrainHandler(RequestHandler):
         loop = IOLoop.current()
         print('loop', loop, dir(loop))
         job_id = str(uuid.uuid4())
-        conn = await aioredis.create_connection(REDIS_ADDRESS,
-                                                loop=IOLoop.current().asyncio_loop,
-                                                encoding='utf-8')
-        job_status = {'status': QUEUING, 'result': False}
-        ok = await conn.execute('set', job_id, json.dumps(job_status))
-        assert ok == 'OK', ok
+        async with RedisConnection(REDIS_ADDRESS,
+                                   loop=IOLoop.current().asyncio_loop,
+                                   encoding='utf-8') as conn:
+            job_status = {'status': QUEUING, 'result': False}
+            ok = await conn.execute('set', job_id, json.dumps(job_status))
+            assert ok == 'OK', ok
 
         future = asyncio.Future()
         asyncio.ensure_future(calc(future, function_args, job_id))
 
-        _status_dict = await conn.execute('get', job_id)
-        conn.close()
-        await conn.wait_closed()
-        status_dict = json.loads(_status_dict)
-        status_dict['job_id'] = job_id
-        self.write(status_dict)
+        job_status['job_id'] = job_id
+        self.write(job_status)
