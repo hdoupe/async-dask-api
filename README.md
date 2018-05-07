@@ -32,3 +32,10 @@ with Google cloud in mind.
 ```
 helm install pbrain-charts/pbrain -f pbrain/values.yaml
 ```
+
+
+Testing:
+
+```
+docker-compose run tornado py.test -v
+```
