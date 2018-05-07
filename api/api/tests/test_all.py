@@ -8,7 +8,7 @@ from distributed import Client
 # from distributed.utils_test import loop
 import taxcalc
 
-from api.api import make_app
+from api.cluster_api import make_app
 from api.utils import SUCCESS, FAIL
 
 
