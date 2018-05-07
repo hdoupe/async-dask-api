@@ -3,6 +3,7 @@ import asyncio
 import aiohttp
 import aioredis
 import uuid
+import traceback
 
 from distributed import Client
 import taxcalc
@@ -67,8 +68,25 @@ async def calc(future, policy_dict, job_id):
         # 1. control is passed back to the event main loop
         # 2. dask is pushing this job onto the compute cluster
         print('await on result...')
-        results = await client.gather(dask_futures)
-        await client.close()
+        try:
+            results = await client.gather(dask_futures)
+        except Exception as e:
+            tracebacks = {}
+            for dask_future in dask_futures:
+                if dask_future.status == 'error':
+                    tb = dask_future.traceback()
+                    ex = traceback.format_tb(tb.result())
+                    print('ex', ex)
+                    tracebacks[dask_future.key] = ex
+                else:
+                    await dask_future.cancel()
+            job_status = {'status': FAIL, 'result': tracebacks}
+            ok = await conn.execute('set', job_id, json.dumps(job_status))
+            assert ok == 'OK', ok
+            future.set_result(True)
+            return
+        finally:
+            await client.close()
         aggr_d = {}
         for result in results:
             aggr_d.update(result['aggr_d'])
