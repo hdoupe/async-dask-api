@@ -59,7 +59,7 @@ async def calc(future, policy_dict, job_id):
 
         # returns a new future for the dask job
         dask_futures = []
-        for i in range(0, 2):
+        for i in range(0, 3):
             kw['year_n'] = i
             dask_futures.append(
                 client.submit(taxcalc.tbi.run_nth_year_tax_calc_model, **kw)

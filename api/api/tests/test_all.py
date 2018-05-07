@@ -75,10 +75,11 @@ class TaxBrainTestCase(AsyncHTTPTestCase):
         from api.taxbrain import taxcalc
         def f(**kwargs):
             print(kwargs)
-            time.sleep(0.5)
-            if kwargs['year_n'] == 0:
+            year = kwargs['year_n']
+            time.sleep(max(0.5 * year, 3))
+            if year == 1:
                 raise ValueError('Simulate Failed job')
-            return {'aggr_d': {'result': kwargs['year_n']}}
+            return {'aggr_d': {'result': year}}
         real_run = taxcalc.tbi.run_nth_year_tax_calc_model
         taxcalc.tbi.run_nth_year_tax_calc_model = f
         try:
