@@ -3,7 +3,7 @@ from tornado.ioloop import IOLoop
 from distributed import Client
 
 from api.taxbrain import TaxBrainHandler
-from api.utils import (APP_ADDRESS, PBRAIN_SCHEDULER_ADDRESS, REDIS_ADDRESS,
+from api.utils import (PBRAIN_SCHEDULER_ADDRESS, REDIS_ADDRESS,
                        RedisConnection)
 
 class Ready(RequestHandler):

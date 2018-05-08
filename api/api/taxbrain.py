@@ -10,7 +10,7 @@ import taxcalc
 from tornado.web import RequestHandler
 from tornado.ioloop import IOLoop
 
-from api.utils import (PBRAIN_SCHEDULER_ADDRESS, APP_ADDRESS, REDIS_ADDRESS,
+from api.utils import (PBRAIN_SCHEDULER_ADDRESS, REDIS_ADDRESS,
                    QUEUING, PENDING, SUCCESS, FAIL, RedisConnection)
 
 
