@@ -3,7 +3,8 @@ from tornado.ioloop import IOLoop
 from distributed import Client
 
 from api.taxbrain import TaxBrainHandler
-from api.utils import APP_ADDRESS, PBRAIN_SCHEDULER_ADDRESS
+from api.utils import (APP_ADDRESS, PBRAIN_SCHEDULER_ADDRESS, REDIS_ADDRESS,
+                       RedisConnection)
 
 class Ready(RequestHandler):
 
@@ -14,6 +15,12 @@ class Ready(RequestHandler):
         print('sched info', client._scheduler_identity)
         print('closing client')
         await client.close()
+        print('make sure redis is reachable')
+        async with RedisConnection(REDIS_ADDRESS,
+                                   loop=IOLoop.current().asyncio_loop,
+                                   encoding='utf-8') as conn:
+            assert conn is not None
+
         self.write('feeling ready...')
 
 
